@@ -274,6 +274,7 @@ static int pad(FILE *fp, int col, int i)
  * @param t1      Text part 1
  * @param t2      Text part 2
  * @param t3      Text part 3
+ * @param width   Width to wrap to
  *
  * Assemble the three columns of text.
  *
@@ -282,7 +283,7 @@ static int pad(FILE *fp, int col, int i)
  * *  0 : Non-macro
  * * -1 : Macro with no description
  */
-static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, const char *t3)
+static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, const char *t3, int width)
 {
   int col;
   int col_b;
@@ -290,7 +291,7 @@ static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, c
   fputs(t1, fp);
 
   /* don't try to press string into one line with less than 40 characters. */
-  bool split = (MuttIndexWindow->state.cols < 40);
+  bool split = (width < 40);
   if (split)
   {
     col = 0;
@@ -299,10 +300,10 @@ static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, c
   }
   else
   {
-    const int col_a = (MuttIndexWindow->state.cols > 83) ?
-                          (MuttIndexWindow->state.cols - 32) >> 2 :
+    const int col_a = (width > 83) ?
+                          (width - 32) >> 2 :
                           12;
-    col_b = (MuttIndexWindow->state.cols > 49) ? (MuttIndexWindow->state.cols - 10) >> 1 : 19;
+    col_b = (width > 49) ? (width - 10) >> 1 : 19;
     col = pad(fp, mutt_strwidth(t1), col_a);
   }
 
@@ -336,7 +337,7 @@ static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, c
   {
     while (*t3)
     {
-      int n = MuttIndexWindow->state.cols - col;
+      int n = width - col;
 
       if (ismacro >= 0)
       {
@@ -355,7 +356,7 @@ static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, c
         }
         else
         {
-          n += col - MuttIndexWindow->state.cols;
+          n += col - width;
           if (C_Markers)
             n++;
         }
@@ -369,10 +370,11 @@ static void format_line(FILE *fp, int ismacro, const char *t1, const char *t2, c
 
 /**
  * dump_menu - Write all the key bindings to a file
- * @param fp   File to write to
- * @param menu Current Menu, e.g. #MENU_PAGER
+ * @param fp    File to write to
+ * @param menu  Current Menu, e.g. #MENU_PAGER
+ * @param width Width to wrap to
  */
-static void dump_menu(FILE *fp, enum MenuType menu)
+static void dump_menu(FILE *fp, enum MenuType menu, int width)
 {
   struct Keymap *map = NULL;
   const struct Binding *b = NULL;
@@ -388,15 +390,15 @@ static void dump_menu(FILE *fp, enum MenuType menu)
       if (map->op == OP_MACRO)
       {
         if (map->desc)
-          format_line(fp, 1, buf, map->macro, map->desc);
+          format_line(fp, 1, buf, map->macro, map->desc, width);
         else
-          format_line(fp, -1, buf, "macro", map->macro);
+          format_line(fp, -1, buf, "macro", map->macro, width);
       }
       else
       {
         b = help_lookup_function(map->op, menu);
         format_line(fp, 0, buf, b ? b->name : "UNKNOWN",
-                    b ? _(HelpStrings[b->op]) : _("ERROR: please report this bug"));
+                    b ? _(HelpStrings[b->op]) : _("ERROR: please report this bug"), width);
       }
     }
   }
@@ -422,14 +424,15 @@ static bool is_bound(struct Keymap *map, int op)
  * @param funcs All the bindings for the current menu
  * @param map   First key map to consider
  * @param aux   Second key map to consider
+ * @param width Width to wrap to
  */
 static void dump_unbound(FILE *fp, const struct Binding *funcs,
-                         struct Keymap *map, struct Keymap *aux)
+                         struct Keymap *map, struct Keymap *aux, int width)
 {
   for (int i = 0; funcs[i].name; i++)
   {
     if (!is_bound(map, funcs[i].op) && (!aux || !is_bound(aux, funcs[i].op)))
-      format_line(fp, 0, funcs[i].name, "", _(HelpStrings[funcs[i].op]));
+      format_line(fp, 0, funcs[i].name, "", _(HelpStrings[funcs[i].op]), width);
   }
 }
 
@@ -451,6 +454,7 @@ void mutt_help(enum MenuType menu)
   if (!desc)
     desc = _("<UNKNOWN>");
 
+  int width = MuttDialogWindow->state.cols;
   do
   {
     fp = mutt_file_fopen(mutt_b2s(&t), "w");
@@ -460,18 +464,18 @@ void mutt_help(enum MenuType menu)
       goto cleanup;
     }
 
-    dump_menu(fp, menu);
+    dump_menu(fp, menu, width);
     if ((menu != MENU_EDITOR) && (menu != MENU_PAGER))
     {
       fprintf(fp, "\n%s\n\n", _("Generic bindings:"));
-      dump_menu(fp, MENU_GENERIC);
+      dump_menu(fp, MENU_GENERIC, width);
     }
 
     fprintf(fp, "\n%s\n\n", _("Unbound functions:"));
     if (funcs)
-      dump_unbound(fp, funcs, Keymaps[menu], NULL);
+      dump_unbound(fp, funcs, Keymaps[menu], NULL, width);
     if (menu != MENU_PAGER)
-      dump_unbound(fp, OpGeneric, Keymaps[MENU_GENERIC], Keymaps[menu]);
+      dump_unbound(fp, OpGeneric, Keymaps[MENU_GENERIC], Keymaps[menu], width);
 
     mutt_file_fclose(&fp);
 
