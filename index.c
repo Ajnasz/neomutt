@@ -1245,6 +1245,7 @@ int mutt_index_menu(struct MuttWindow *dlg)
             if (e && !e->read && !e->old)
             {
               mutt_message(_("New mail in this mailbox"));
+              mutt_new_mail_hook(Context->mailbox);
               if (C_BeepNew)
                 mutt_beep(true);
               if (C_NewMailCommand)
@@ -1294,6 +1295,7 @@ int mutt_index_menu(struct MuttWindow *dlg)
       {
         if (mutt_mailbox_notify(Context ? Context->mailbox : NULL))
         {
+          mutt_new_mail_hook(Context->mailbox);
           menu->redraw |= REDRAW_STATUS;
           if (C_BeepNew)
             mutt_beep(true);

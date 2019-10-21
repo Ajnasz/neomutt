@@ -65,7 +65,10 @@ typedef uint32_t HookFlags;          ///< Flags for mutt_parse_hook(), e.g. #MUT
 #define MUTT_SHUTDOWN_HOOK (1 << 18) ///< shutdown-hook: run when leaving NeoMutt
 #define MUTT_GLOBAL_HOOK   (1 << 19) ///< Hooks which don't take a regex
 
+#define MUTT_NEW_MAIL_HOOK (1 << 20) ///< new-mail-hook: run when new message arrives
+
 void  mutt_account_hook(const char *url);
+void  mutt_new_mail_hook(struct Mailbox *mailbox);
 void  mutt_crypt_hook(struct ListHead *list, struct Address *addr);
 void  mutt_default_save(char *path, size_t pathlen, struct Email *e);
 void  mutt_delete_hooks(HookFlags type);

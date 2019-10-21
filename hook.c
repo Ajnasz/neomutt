@@ -201,7 +201,7 @@ enum CommandResult mutt_parse_hook(struct Buffer *buf, struct Buffer *s,
     {
       if (data & (MUTT_FOLDER_HOOK | MUTT_SEND_HOOK | MUTT_SEND2_HOOK | MUTT_MESSAGE_HOOK |
                   MUTT_ACCOUNT_HOOK | MUTT_REPLY_HOOK | MUTT_CRYPT_HOOK |
-                  MUTT_TIMEOUT_HOOK | MUTT_STARTUP_HOOK | MUTT_SHUTDOWN_HOOK))
+                  MUTT_TIMEOUT_HOOK | MUTT_STARTUP_HOOK | MUTT_SHUTDOWN_HOOK | MUTT_NEW_MAIL_HOOK))
       {
         /* these hooks allow multiple commands with the same
          * pattern, so if we've already seen this pattern/command pair, just
@@ -791,6 +791,33 @@ done:
   mutt_buffer_pool_release(&err);
 }
 #endif
+
+
+void mutt_new_mail_hook(struct Mailbox *mailbox)
+{
+  struct Hook *hook = NULL;
+  struct Buffer *err = mutt_buffer_pool_get();
+  struct Buffer *token = mutt_buffer_pool_get();
+
+
+  TAILQ_FOREACH(hook, &Hooks, entries)
+  {
+      if (!(hook->command && (hook->type & MUTT_NEW_MAIL_HOOK)))
+          continue;
+
+      if (mutt_parse_rc_line(hook->command, token, err) == MUTT_CMD_ERROR)
+      {
+          mutt_buffer_pool_release(&token);
+          mutt_error("%s", mutt_b2s(err));
+          mutt_buffer_pool_release(&err);
+
+          return;
+      }
+  }
+
+  mutt_buffer_pool_release(&token);
+  mutt_buffer_pool_release(&err);
+}
 
 /**
  * mutt_timeout_hook - Execute any timeout hooks
