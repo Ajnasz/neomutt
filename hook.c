@@ -797,7 +797,6 @@ void mutt_new_mail_hook(struct Mailbox *mailbox)
 {
   struct Hook *hook = NULL;
   struct Buffer *err = mutt_buffer_pool_get();
-  struct Buffer *token = mutt_buffer_pool_get();
 
 
   TAILQ_FOREACH(hook, &Hooks, entries)
@@ -805,9 +804,8 @@ void mutt_new_mail_hook(struct Mailbox *mailbox)
       if (!(hook->command && (hook->type & MUTT_NEW_MAIL_HOOK)))
           continue;
 
-      if (mutt_parse_rc_line(hook->command, token, err) == MUTT_CMD_ERROR)
+      if (mutt_parse_rc_line(hook->command, err) == MUTT_CMD_ERROR)
       {
-          mutt_buffer_pool_release(&token);
           mutt_error("%s", mutt_b2s(err));
           mutt_buffer_pool_release(&err);
 
@@ -815,7 +813,6 @@ void mutt_new_mail_hook(struct Mailbox *mailbox)
       }
   }
 
-  mutt_buffer_pool_release(&token);
   mutt_buffer_pool_release(&err);
 }
 

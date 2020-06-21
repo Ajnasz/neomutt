@@ -92,6 +92,7 @@ const struct Command Commands[] = {
   { "mono",                mutt_parse_mono,        0 },
   { "my_hdr",              parse_my_hdr,           0 },
   { "named-mailboxes",     parse_mailboxes,        MUTT_NAMED },
+  { "new-mail-hook",       mutt_parse_hook,        MUTT_NEW_MAIL_HOOK },
   { "nospam",              parse_spam_list,        MUTT_NOSPAM },
 #ifdef USE_COMP_MBOX
   { "open-hook",           mutt_parse_hook,        MUTT_OPEN_HOOK },
